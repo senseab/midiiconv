@@ -1,0 +1,6 @@
+github.com/beevik/etree v1.1.0 h1:T0xke/WvNtMoCqgzPhkX2r4rjY3GDZFi+FjpRZY2Jbs=
+github.com/beevik/etree v1.1.0/go.mod h1:r8Aw8JqVegEf0w2fDnATrX9VpkMcyFeM0FhwO62wh+A=
+github.com/djimenez/iconv-go v0.0.0-20160305225143-8960e66bd3da h1:0qwwqQCLOOXPl58ljnq3sTJR7yRuMolM02vjxDh4ZVE=
+github.com/djimenez/iconv-go v0.0.0-20160305225143-8960e66bd3da/go.mod h1:ns+zIWBBchgfRdxNgIJWn2x6U95LQchxeqiN5Cgdgts=
+github.com/m13253/midimark v0.0.0-20181121074654-3a94327e296b h1:oh+wCtek1llqhuoCjtJBfFDoqUBNdjjhhMxBBGqfBMY=
+github.com/m13253/midimark v0.0.0-20181121074654-3a94327e296b/go.mod h1:9JmmGErQD4NPNwU3PKX2uH5Vxy/LVpucpcwyTx5FTjU=
