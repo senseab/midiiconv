@@ -3,9 +3,9 @@ package main
 import (
 	"bytes"
 	"flag"
-	"fmt"
 	"log"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"text/template"
@@ -15,18 +15,15 @@ import (
 )
 
 const textTemplate = `
-{{- $resultsLength := (len .Results) -}}
-{{- quote .Text}} has
-{{- if ne .Err nil}} error: {{.Err}}
-{{- else}} possible charset
-{{- range $i, $r := .Results -}}
+{{- $resultsLength := (len .) -}}
+Possible charset order:
+{{- range $i, $r := . -}}
 {{- " " -}}
-{{- $r.Charset}}({{$r.Confidence}}%)
+{{- $r.Charset}}({{$r.Score}})
 {{- if ge (add $i 1) $resultsLength -}}
 .
 {{- else -}}
 , 
-{{- end -}}
 {{- end -}}
 {{- end -}}
 `
@@ -46,7 +43,7 @@ func init() {
 	flag.StringVar(&ef, "from", "utf-8", "from encoding")
 	flag.StringVar(&et, "to", "utf-8", "to encoding")
 	flag.BoolVar(&fixCrLf, "fix-crlf", false, "convert `\\r` to `\\r\\n`")
-	flag.BoolVar(&charsetDetect, "charset-detect", false, "detect possible character set.")
+	flag.BoolVar(&charsetDetect, "charset-detect", false, "[EXPERIMENTAL] detect possible character set.")
 	flag.Parse()
 
 	if fi == "" {
@@ -67,6 +64,7 @@ func main() {
 	}
 
 	if charsetDetect {
+		stats := make(map[string]int)
 		funcMap := template.FuncMap{
 			"add": func(a, b int) int {
 				return a + b
@@ -78,18 +76,35 @@ func main() {
 		}
 		t := template.Must(template.New("").Funcs(funcMap).Parse(textTemplate))
 
-		if rs := midiiconv.Detect(seq); err != nil {
-			log.Println(err)
-		} else {
-			for i, c := range rs {
-				buf := bytes.NewBufferString(fmt.Sprintf("Event %d::", i))
-				if err := t.Execute(buf, c); err != nil {
-					log.Println(err)
-					continue
+		rs := midiiconv.Detect(seq)
+		for _, c := range rs {
+			for _, r := range c.Results {
+				if _, ok := stats[r.Charset]; ok {
+					stats[r.Charset] += r.Confidence
+				} else {
+					stats[r.Charset] = r.Confidence
 				}
-				log.Println(buf.String())
 			}
 		}
+
+		statsResult := make([]*struct {
+			Charset string
+			Score   int
+		}, 0)
+		for k, v := range stats {
+			statsResult = append(statsResult, &struct {
+				Charset string
+				Score   int
+			}{
+				k, v,
+			})
+		}
+		sort.Slice(statsResult, func(i, j int) bool {
+			return statsResult[i].Score > statsResult[j].Score
+		})
+		buf := bytes.NewBufferString("")
+		t.Execute(buf, statsResult)
+		log.Println(buf.String())
 		return
 	}
 
