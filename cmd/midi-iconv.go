@@ -48,6 +48,7 @@ func init() {
 	flag.BoolVar(&fixCrLf, "fix-crlf", false, "convert `\\r` to `\\r\\n`")
 	flag.BoolVar(&charsetDetect, "charset-detect", false, "detect possible character set.")
 	flag.Parse()
+
 	if fi == "" {
 		log.Fatalln("no input file specified, use `-input filename`")
 	}
