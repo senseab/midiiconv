@@ -1,14 +1,35 @@
 package main
 
 import (
+	"bytes"
 	"flag"
+	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/m13253/midimark"
 	"github.com/tonychee7000/midiiconv"
 )
+
+const textTemplate = `
+{{- $resultsLength := (len .Results) -}}
+{{- quote .Text}} has
+{{- if ne .Err nil}} error: {{.Err}}
+{{- else}} possible charset
+{{- range $i, $r := .Results -}}
+{{- " " -}}
+{{- $r.Charset}}({{$r.Confidence}}%)
+{{- if ge (add $i 1) $resultsLength -}}
+.
+{{- else -}}
+, 
+{{- end -}}
+{{- end -}}
+{{- end -}}
+`
 
 var (
 	fi, fo, ef, et         string
@@ -45,16 +66,27 @@ func main() {
 	}
 
 	if charsetDetect {
+		funcMap := template.FuncMap{
+			"add": func(a, b int) int {
+				return a + b
+			},
+			"minus": func(a, b int) int {
+				return a - b
+			},
+			"quote": strconv.Quote,
+		}
+		t := template.Must(template.New("").Funcs(funcMap).Parse(textTemplate))
+
 		if rs := midiiconv.Detect(seq); err != nil {
 			log.Println(err)
 		} else {
 			for i, c := range rs {
-				if c.Err != nil {
-					log.Printf("Event #%d::`%s` has error: %v", i, c.Text, c.Err)
+				buf := bytes.NewBufferString(fmt.Sprintf("Event %d::", i))
+				if err := t.Execute(buf, c); err != nil {
+					log.Println(err)
+					continue
 				}
-				for _, n := range c.Results {
-					log.Printf("Event #%d::`%s` has possible charset %s(%d%%)\n", i, c.Text, n.Charset, n.Confidence)
-				}
+				log.Println(buf.String())
 			}
 		}
 		return
